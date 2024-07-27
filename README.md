@@ -36,8 +36,8 @@ Check out https://docs.dynatrace.com/docs/shortlink/otel-collector for more info
 1. Also add it as the last `stages` definition in that file:
     ```yml
     stages:
-    - ...
-    - otel-exporter
+        - ...
+        - otel-exporter
     ```
 
 1. Ensure that the `otel-exporter.yml` file is present in the repo

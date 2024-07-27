@@ -190,7 +190,7 @@ def send_to_otelcol(project, pipeline):
     
     gl.session.close()
 
-def setup_otel_export() -> str: 
+def setup_otel_export(): 
     # Set local variables
     project_id = os.getenv('CI_PROJECT_ID')
     pipeline_id = os.getenv('CI_PARENT_PIPELINE')
