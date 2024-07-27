@@ -9,16 +9,9 @@ from opentelemetry.trace import Status, StatusCode
 from otel import create_resource_attributes, get_logger, get_tracer
 from global_variables import *
 import re
+ 
+def send_to_otelcol(project, pipeline):    
     
-def send_to_otelcol():
-    # Set local variables
-    project_id = os.getenv('CI_PROJECT_ID')
-    pipeline_id = os.getenv('CI_PARENT_PIPELINE')
-
-    # Set gitlab project/pipeline/jobs details
-    project = gl.projects.get(project_id)
-
-    pipeline = project.pipelines.get(pipeline_id)
     GLAB_SERVICE_NAME = str((project.attributes.get('name_with_namespace'))).lower().replace(" ", "")
 
     try:
@@ -27,8 +20,8 @@ def send_to_otelcol():
         #Ensure we don't export data for otel exporters
         for job in jobs:
             job_json = json.loads(job.to_json())
-            #if str(job_json['stage']).lower() not in ["otel-exporter", "otel-metrics-exporter"]:
-            job_lst.append(job_json)
+            if str(job_json['stage']).lower() not in ["otel-exporter", "otel-metrics-exporter"]:
+                job_lst.append(job_json)
                 
         if len(job_lst) == 0:
             print("No data to export, assuming this pipeline jobs are otel exporters")
@@ -41,8 +34,8 @@ def send_to_otelcol():
     global_resource = Resource(attributes={
     SERVICE_NAME: GLAB_SERVICE_NAME,
     "instrumentation.name": "gitlab-integration",
-    "pipeline_id": str(os.getenv('CI_PARENT_PIPELINE')),
-    "project_id": str(os.getenv('CI_PROJECT_ID')),
+    "pipeline_id": pipeline.id,
+    "project_id": project.id,
     "gitlab.source": "gitlab-exporter",
     "gitlab.resource.type": "span"
     })
@@ -85,7 +78,7 @@ def send_to_otelcol():
         pcontext = trace.set_span_in_context(p_parent)
         for job in job_lst:
             #Set job level tracer and logger
-            resource_attributes ={SERVICE_NAME: GLAB_SERVICE_NAME,"pipeline_id": str(os.getenv('CI_PARENT_PIPELINE')),"project_id": str(os.getenv('CI_PROJECT_ID')),"job_id": str(job["id"]),"instrumentation.name": "gitlab-integration","gitlab.source": "gitlab-exporter","gitlab.resource.type": "span"}
+            resource_attributes ={SERVICE_NAME: GLAB_SERVICE_NAME,"pipeline_id": pipeline.id,"project_id": project.id,"job_id": str(job["id"]),"instrumentation.name": "gitlab-integration","gitlab.source": "gitlab-exporter","gitlab.resource.type": "span"}
             if GLAB_LOW_DATA_MODE:
                 pass
             else:
@@ -138,7 +131,7 @@ def send_to_otelcol():
                                                 err = True
                                                 
                                     with open("job.log", "rb") as f:
-                                        resource_attributes_base ={SERVICE_NAME: GLAB_SERVICE_NAME,"pipeline_id": str(os.getenv('CI_PARENT_PIPELINE')),"project_id": str(os.getenv('CI_PROJECT_ID')),"job_id": str(job["id"]),"instrumentation.name": "gitlab-integration","gitlab.source": "gitlab-exporter","gitlab.resource.type": "span","stage.name":str(job_json['stage'])}
+                                        resource_attributes_base ={SERVICE_NAME: GLAB_SERVICE_NAME,"pipeline_id": pipeline.id,"project_id": project.id,"job_id": str(job["id"]),"instrumentation.name": "gitlab-integration","gitlab.source": "gitlab-exporter","gitlab.resource.type": "span","stage.name":str(job_json['stage'])}
                                         if err:
                                             count = 1
                                             for string in f:
@@ -196,5 +189,21 @@ def send_to_otelcol():
         p_parent.end(end_time=do_time(str(pipeline_json['finished_at'])))
     
     gl.session.close()
+
+def setup_otel_export() -> str: 
+    # Set local variables
+    project_id = os.getenv('CI_PROJECT_ID')
+    pipeline_id = os.getenv('CI_PARENT_PIPELINE')
     
-send_to_otelcol()
+    # Set gitlab project/pipeline/jobs details
+    project = gl.projects.get(project_id)
+    
+    pipeline = project.pipelines.get(pipeline_id)    
+            
+    return project, pipeline
+
+def otel_export():
+    project, pipeline = setup_otel_export() 
+    send_to_otelcol(project, pipeline)
+
+otel_export()

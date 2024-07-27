@@ -1,7 +1,6 @@
-import time
-from pyrfc3339 import parse
 import os
 from re import search
+from dateutil import parser
 
 GLAB_CONVERT_TO_TIMESTAMP = False
 
@@ -12,7 +11,7 @@ else:
     GLAB_CONVERT_TO_TIMESTAMP = False
     
 def do_time(string):
-    return (int(round(time.mktime(parse(string).timetuple())) * 1000000000))
+    return int(round(parser.isoparse(string).timestamp() * 1000000000))
 
 def do_string(string):
     return str(string).lower().replace(" ", "")

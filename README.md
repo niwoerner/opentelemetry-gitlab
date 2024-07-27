@@ -21,16 +21,16 @@ Check out https://docs.dynatrace.com/docs/shortlink/otel-collector for more info
 1. Add the following stage definition to your `gitlab-ci.yml` file.
     ```yml
     otel-exporter:
-    rules:
-    - when: always
-    stage: otel-exporter
-    inherit:
-    variables: true
-    variables:
-    CI_PARENT_PIPELINE: $CI_PIPELINE_ID
-    trigger:
-    include:
-        - local: otel-exporter.yml
+        stage: otel-exporter
+        inherit:
+            variables: true
+        variables:
+            CI_PARENT_PIPELINE: $CI_PIPELINE_ID
+        trigger:
+            include:
+            - local: otel-exporter.yml
+        rules:
+            - when: always
     ```
 
 1. Also add it as the last `stages` definition in that file:
