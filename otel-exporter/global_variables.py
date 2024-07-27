@@ -22,6 +22,8 @@ global headers
 global paths
 global GLAB_EXPORT_LOGS
 global GLAB_DORA_METRICS
+global SCHEDULED_EXPORT
+global EXPORT_INTERVAL
 
 GLAB_DORA_METRICS=False
 GLAB_EXPORT_LOGS=True
@@ -74,7 +76,6 @@ else:
 # Check project ownership and visibility     
 if "GLAB_PROJECT_OWNERSHIP" in os.environ and os.getenv('GLAB_PROJECT_OWNERSHIP').lower() == "false":
     GLAB_PROJECT_OWNERSHIP = False  
-   
         
 if "GLAB_PROJECT_VISIBILITY" in os.environ:
     GLAB_PROJECT_VISIBILITY = os.getenv('GLAB_PROJECT_VISIBILITY')
@@ -83,7 +84,6 @@ if "GLAB_PROJECT_VISIBILITY" in os.environ:
 if "GLAB_STANDALONE" in os.environ and os.getenv('GLAB_STANDALONE').lower() == "true":
     GLAB_STANDALONE = True
   
-    
 # Check if we using default amount data to export
 if "GLAB_EXPORT_LAST_MINUTES" in os.environ:
     GLAB_EXPORT_LAST_MINUTES = int(os.getenv('GLAB_EXPORT_LAST_MINUTES'))+1
@@ -91,7 +91,14 @@ if "GLAB_EXPORT_LAST_MINUTES" in os.environ:
 #Check which datacentre we exporting our data to
 if "OTEL_EXPORTER_OTEL_ENDPOINT" in os.environ:
     OTEL_EXPORTER_OTEL_ENDPOINT = os.getenv('OTEL_EXPORTER_OTEL_ENDPOINT')
-        
+   
+#Check if it is a scheduled export
+if "SCHEDULED_EXPORT" in os.environ and os.getenv('SCHEDULED_EXPORT').lower() == "true":
+    SCHEDULED_EXPORT = True
+    EXPORT_INTERVAL = os.getenv("EXPORT_INTERVAL") #todo: set default
+else: 
+    SCHEDULED_EXPORT = False
+         
 #Set variables to use for OTEL metrics and logs exporters
 endpoint="{}".format(OTEL_EXPORTER_OTEL_ENDPOINT)
 headers="myheader=abc"

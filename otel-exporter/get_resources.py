@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 import pytz
 import zulu
 from opentelemetry.sdk.resources import Resource
@@ -77,7 +77,7 @@ def get_dora_metrics(current_project):
         "instrumentation.name": "gitlab-integration",
         "gitlab.source": "gitlab-metrics-exporter",
         "gitlab.resource.type": "dora-metrics",
-        "project.id": project_id,
+        "project.id": str(project_id),
         "namespace.path": json.loads(current_project.to_json())["namespace"]["path"],
         "namespace.kind": json.loads(current_project.to_json())["namespace"]["kind"],
         "url": json.loads(current_project.to_json())["web_url"]
@@ -297,4 +297,31 @@ def get_jobs(current_project,current_pipeline):
                 print("Log events sent for job: " + str(job_json['id']) + " for pipeline: "+ str(current_pipeline_json['id'])+ " from project: " + str(project_id)+ " - " + str(GLAB_SERVICE_NAME))          
 
     except Exception as e:
-        print(project_id,e)           
+        print(project_id,e)
+
+def get_updated_pipelines(interval:int, project_id: str) -> list: 
+    # Substract export interval from current UTC time (Gitlab expectes UTC ISO 8601 format)
+    current_time_utc = datetime.now(timezone.utc)
+    interval_time = current_time_utc - timedelta(minutes=interval)
+    
+    pipeline_ids = []
+    
+    #parent pipelines
+    path = str("/projects/" + project_id + "/pipelines?updated_after=" + interval_time.isoformat()) 
+    updated_pipelines = gl.http_list(path=path, get_all=True)
+    
+    #don't export running pipelines
+    for i in updated_pipelines:
+        if i["status"] != "running": 
+            pipeline_ids.append(i["id"])
+        
+    #child pipelines - by default child pipelines are not returned by gitlab: https://docs.gitlab.com/ee/api/pipelines.html#list-project-pipelines
+    path = str("/projects/" + project_id + "/pipelines?source=parent_pipeline&updated_after=" + interval_time.isoformat()) 
+    updated_pipelines = gl.http_list(path=path, get_all=True)
+
+    #don't export running pipelines
+    for i in updated_pipelines:
+        if i["status"] != "running": 
+            pipeline_ids.append(i["id"])
+               
+    return pipeline_ids    
