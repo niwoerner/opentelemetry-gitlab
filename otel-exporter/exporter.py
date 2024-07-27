@@ -24,7 +24,7 @@ def send_to_otelcol(project, pipeline):
                 
         if len(job_lst) == 0:
             print("No data to export, assuming this pipeline jobs are otel exporters")
-            return 
+            return
             
     except Exception as e:
         print(e)
@@ -84,8 +84,6 @@ def send_to_otelcol(project, pipeline):
             pipeline_attributes.update(atts)
             p_parent.set_attributes(pipeline_attributes)
 
-        
-
         #Set the current span in context(parent)
         pcontext = trace.set_span_in_context(p_parent)
         for job in job_lst:
@@ -101,13 +99,13 @@ def send_to_otelcol(project, pipeline):
             try:
              # Create a new child span for every valid job, set it as the current span in context
                 if (job['status']) == "skipped":
-                    child = job_tracer.start_span(name="Stage: " + str(job['stage'])+" - job: "+ str(job['name']) + "- SKIPPED",context=pcontext,kind=trace.SpanKind.CONSUMER)
+                    child = job_tracer.start_span(name="Stage: " + str(job['stage'])+" - job: "+ str(job['name']) + " - SKIPPED",context=pcontext,kind=trace.SpanKind.CONSUMER)
                     child.end()
                 elif (job['status']) == "manual":
-                    child = job_tracer.start_span(name="Stage: " + str(job['stage'])+" - job: "+ str(job['name']) + "- MANUAL",context=pcontext,kind=trace.SpanKind.CONSUMER)
+                    child = job_tracer.start_span(name="Stage: " + str(job['stage'])+" - job: "+ str(job['name']) + " - MANUAL",context=pcontext,kind=trace.SpanKind.CONSUMER)
                     child.end()
                 elif (job['status']) == "pending":
-                    child = job_tracer.start_span(name="Stage: " + str(job['stage'])+" - job: "+ str(job['name']) + "- PENDING",context=pcontext,kind=trace.SpanKind.CONSUMER)
+                    child = job_tracer.start_span(name="Stage: " + str(job['stage'])+" - job: "+ str(job['name']) + " - PENDING",context=pcontext,kind=trace.SpanKind.CONSUMER)
                     child.end()
                 else:
                     child = job_tracer.start_span(name="Stage: " + str(job['stage'])+" - job: "+ str(job['name']), start_time=do_time(job['started_at']),context=pcontext, kind=trace.SpanKind.CONSUMER)
